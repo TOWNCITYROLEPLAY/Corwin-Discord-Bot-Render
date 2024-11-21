@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const chalk = require('chalk');
 require('dotenv').config('./.env');
 const axios = require('axios');
+const http = require('http');
 
 // Check if the bot is up to date
 const { version } = require('.././package.json');
@@ -13,8 +14,77 @@ axios.get('https://api.github.com/repos/CorwinDev/Discord-Bot/releases/latest').
     console.log(chalk.red.bgYellow(`Failed to check if bot is up to date!`));
 });
 
-const webhook = require("./config/webhooks.json");
-const config = require("./config/bot.js");
+class Flask {
+    constructor() {
+        this.routes = {
+            GET: {},
+            POST: {}
+        };
+    }
+
+    get(path, handler) {
+        this.routes.GET[path] = handler;
+    }
+
+    post(path, handler) {
+        this.routes.POST[path] = handler;
+    }
+
+    listen(port, callback) {
+        const server = http.createServer((req, res) => {
+            const method = req.method;
+            const url = req.url;
+
+            if (this.routes[method] && this.routes[method][url]) {
+                console.log(chalk.green(`[SERVER] Handling ${method} request for ${url}`));
+                this.routes[method][url](req, res);
+            } else {
+                console.log(chalk.red(`[SERVER] 404 Not Found: ${method} ${url}`));
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('404 Not Found');
+            }
+        });
+
+        server.listen(port, () => {
+            console.log(chalk.blue(`[SERVER] Listening on port ${port}`));
+            if (callback) callback();
+        });
+    }
+}
+
+// Create the Flask-like app
+const app = new Flask();
+
+// Define GET routes
+app.get('/', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Hello, world!');
+});
+
+app.get('/about', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('This is the about page.');
+});
+
+// Define POST route
+app.post('/data', (req, res) => {
+    let body = '';
+    req.on('data', chunk => {
+        body += chunk;
+    });
+
+    req.on('end', () => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Data received', data: body }));
+        console.log(chalk.yellow(`[SERVER] Received POST data: ${body}`));
+    });
+});
+
+// Start the server
+app.listen(3000, () => {
+    console.log(chalk.green(`[SERVER] Server running at http://localhost:3000/`));
+});
+
 
 const webHooksArray = [
     'startLogs', 'shardLogs', 'errorLogs', 'dmLogs', 'voiceLogs',
