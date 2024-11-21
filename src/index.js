@@ -85,6 +85,8 @@ app.listen(3000, () => {
     console.log(chalk.green(`[SERVER] Server running at http://localhost:3000/`));
 });
 
+const webhook = require("./config/webhooks.json");
+const config = require("./config/bot.js");
 
 const webHooksArray = [
     'startLogs', 'shardLogs', 'errorLogs', 'dmLogs', 'voiceLogs',
